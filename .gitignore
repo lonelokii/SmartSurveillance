@@ -9,6 +9,6 @@ tests/data/*.mp4
 yolov8*.pt
 .agent
 .agents
-.genimi
+.gemini
 .gsd
 .venv_new
