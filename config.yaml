@@ -1,0 +1,48 @@
+# Smart Surveillance System — Phase 1 Configuration
+
+system:
+  app_name: "Smart Surveillance System"
+  phase: "Phase 1"
+  log_level: "INFO"
+
+source:
+  # Mode: 'video' or 'live'
+  mode: "live"
+  video_path: "tests/data/sample_test.mp4"
+  live_url: "http://192.168.1.5:8080/video"
+  processing_width: 640
+  processing_height: 480
+
+model:
+  weights_path: "yolov8n.pt"
+  target_device: "cuda:0"       # 'cuda:0' or 'cpu'
+  auto_cuda_fallback: true      # If cuda:0 unavailable, truthfully fallback to cpu
+  confidence_threshold: 0.50
+  image_size: 640
+  classes: [0]                  # Strictly person class (COCO 0)
+
+tracker:
+  max_missed_frames: 30
+  min_hits: 2
+  iou_threshold: 0.30
+
+line_crossing:
+  enabled: true
+  # Coordinates defined relative to processing dimensions (640x480)
+  start_point: [100, 240]
+  end_point: [540, 240]
+  # Direction definition: 'top_to_bottom', 'bottom_to_top', 'left_to_right', 'right_to_left'
+  entry_direction: "top_to_bottom"
+
+restricted_zone:
+  enabled: true
+  polygon_points:
+    - [350, 150]
+    - [550, 150]
+    - [550, 400]
+    - [350, 400]
+  zone_id: "ZONE_A"
+
+storage:
+  snapshot_dir: "snapshots"
+  database_path: "surveillance.db"

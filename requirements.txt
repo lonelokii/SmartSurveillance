@@ -1,0 +1,11 @@
+# PyTorch CUDA 12.6 official wheels for Linux (Python 3.14)
+--extra-index-url https://download.pytorch.org/whl/cu126
+torch==2.14.1+cu126
+torchvision==0.29.1+cu126
+
+# Phase 1 Core Dependencies
+ultralytics>=8.4.0
+opencv-python>=4.10.0
+pyyaml>=6.0
+numpy>=2.0.0
+pytest>=8.0.0

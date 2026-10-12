@@ -1,0 +1,6 @@
+{
+  "clip": "tests/data/empty_room_test.mp4",
+  "total_frames_evaluated": 100,
+  "false_detections_count": 0,
+  "false_detections": []
+}

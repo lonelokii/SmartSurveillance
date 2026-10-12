@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.db
+snapshots/
+.venv/
+tests/data/*.mp4
+yolov8*.pt
+.agent
+.agents
+.genimi
+.gsd
+.venv_new
