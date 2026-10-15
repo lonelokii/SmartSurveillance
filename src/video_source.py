@@ -50,13 +50,24 @@ class VideoSource:
         Raises:
             SourceOpenError: If the source cannot be opened or read.
         """
+        is_camera_index = False
         if self.mode == "video":
-            if not self.video_path or not os.path.exists(self.video_path):
+            if self.video_path is None or str(self.video_path).strip() == "":
+                raise SourceOpenError(
+                    "Local video file path is empty. Please verify the configuration or pass --video-path."
+                )
+            str_path = str(self.video_path).strip()
+            if str_path.isdigit():
+                # Supports numeric device indices for local USB / built-in webcams (e.g., 0)
+                source_target = int(str_path)
+                is_camera_index = True
+            elif not os.path.exists(self.video_path):
                 raise SourceOpenError(
                     f"Local video file not found: '{self.video_path}'. "
                     "Please verify the file path exists."
                 )
-            source_target = self.video_path
+            else:
+                source_target = self.video_path
         elif self.mode == "live":
             if not self.live_url:
                 raise SourceOpenError("Live URL is empty. Please provide a valid IP camera stream URL.")
@@ -82,8 +93,8 @@ class VideoSource:
                 f"Video source '{source_target}' opened, but failed to read initial frame."
             )
         
-        # Rewind if local video so caller gets frame 0
-        if self.mode == "video":
+        # Rewind if local video file so caller gets frame 0 (skip for live device index)
+        if self.mode == "video" and not is_camera_index:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
         self._frame_count = 0

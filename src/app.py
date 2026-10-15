@@ -97,12 +97,26 @@ class SurveillanceApp:
         """Run the main surveillance processing loop."""
         self._running = True
 
-        def signal_handler(sig, frame):
-            logger.info("Termination signal received. Stopping application cleanly...")
-            self._running = False
+        # Register termination signal handlers safely (only works in main thread)
+        try:
+            def signal_handler(sig, frame):
+                logger.info("Termination signal received. Stopping application cleanly...")
+                self._running = False
 
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+            signal.signal(signal.SIGTERM, signal_handler)
+        except (ValueError, AttributeError):
+            logger.debug("Signal handlers skipped (application not running in main thread).")
+
+        # Auto-detect headless environments on Linux (e.g. Docker, CI, SSH without X11 forwarding)
+        if not headless and sys.platform.startswith("linux"):
+            import os
+            if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+                logger.warning(
+                    "No graphical display detected ($DISPLAY / $WAYLAND_DISPLAY not set). "
+                    "Automatically switching to headless mode."
+                )
+                headless = True
 
         logger.info("Opening video source...")
         self.video_source.open()
@@ -185,11 +199,15 @@ class SurveillanceApp:
 
                 # Step 7: Display (if not headless)
                 if not headless:
-                    cv2.imshow("Smart Surveillance System - Phase 1", annotated_frame)
-                    key = cv2.waitKey(1) & 0xFF
-                    if key == ord("q"):
-                        logger.info("Operator pressed 'q'. Exiting cleanly.")
-                        break
+                    try:
+                        cv2.imshow("Smart Surveillance System - Phase 1", annotated_frame)
+                        key = cv2.waitKey(1) & 0xFF
+                        if key == ord("q"):
+                            logger.info("Operator pressed 'q'. Exiting cleanly.")
+                            break
+                    except cv2.error as e:
+                        logger.warning(f"GUI display error ({e}). Automatically switching to headless mode.")
+                        headless = True
 
                 if max_frames and frame_index >= max_frames:
                     logger.info(f"Reached maximum requested frames ({max_frames}). Stopping.")
@@ -208,5 +226,8 @@ class SurveillanceApp:
             self.video_source.release()
         if self.db_logger:
             self.db_logger.close()
-        cv2.destroyAllWindows()
+        try:
+            cv2.destroyAllWindows()
+        except Exception:
+            pass
         logger.info("All resources successfully released.")

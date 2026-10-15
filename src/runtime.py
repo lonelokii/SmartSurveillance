@@ -91,21 +91,72 @@ class RuntimeDiagnostics:
         cuda_avail, count, gpu_name, kernels_functional, diag = cls.get_cuda_status()
         
         target = requested_device.strip().lower()
-        is_cuda_request = target in ("cuda", "cuda:0", "0")
-        
-        if is_cuda_request:
-            if cuda_avail and count > 0 and kernels_functional:
-                logger.info(f"Verified CUDA device 0: {gpu_name}")
-                return "cuda:0"
-            else:
-                reason = diag or "CUDA is not available to PyTorch."
-                msg = f"Requested device '{requested_device}', but {reason}"
+
+        # 1. Handle Apple Silicon Metal Performance Shaders (MPS)
+        if target == "mps":
+            try:
+                import torch
+                if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                    _ = torch.zeros((1,), device="mps") + 1
+                    logger.info("Verified Apple Silicon MPS device acceleration.")
+                    return "mps"
+                else:
+                    msg = "MPS requested, but torch.backends.mps is not available on this platform/wheel."
+                    if auto_fallback:
+                        logger.warning(f"{msg} Truthfully falling back to CPU mode.")
+                        return "cpu"
+                    else:
+                        raise DeviceConfigurationError(f"{msg} Auto-fallback is disabled.")
+            except Exception as e:
+                msg = f"MPS device detected but kernel execution failed: {e}."
                 if auto_fallback:
                     logger.warning(f"{msg} Truthfully falling back to CPU mode.")
                     return "cpu"
                 else:
                     raise DeviceConfigurationError(f"{msg} Auto-fallback is disabled.")
-        
+
+        # 2. Handle NVIDIA CUDA devices (e.g. cuda, cuda:0, cuda:1, 0, 1)
+        is_cuda_request = target == "cuda" or target.startswith("cuda:") or target.isdigit()
+        if is_cuda_request:
+            cuda_idx = 0
+            if target.startswith("cuda:"):
+                try:
+                    cuda_idx = int(target.split(":")[1])
+                except (ValueError, IndexError):
+                    cuda_idx = 0
+            elif target.isdigit():
+                cuda_idx = int(target)
+
+            resolved_cuda_str = f"cuda:{cuda_idx}"
+
+            if cuda_idx == 0:
+                # Primary device check using cached/empirical status
+                if cuda_avail and count > 0 and kernels_functional:
+                    logger.info(f"Verified CUDA device 0: {gpu_name}")
+                    return "cuda:0"
+                else:
+                    reason = diag or "CUDA device 0 is not available to PyTorch."
+            else:
+                # Secondary device check
+                if cuda_avail and count > cuda_idx:
+                    try:
+                        import torch
+                        _ = torch.zeros((1,), device=resolved_cuda_str) + 1
+                        sec_name = torch.cuda.get_device_name(cuda_idx)
+                        logger.info(f"Verified CUDA device {cuda_idx}: {sec_name}")
+                        return resolved_cuda_str
+                    except Exception as e:
+                        reason = f"CUDA device {cuda_idx} kernel execution failed: {e}"
+                else:
+                    reason = f"CUDA device {cuda_idx} unavailable (only {count} CUDA devices visible)."
+
+            msg = f"Requested device '{requested_device}', but {reason}"
+            if auto_fallback:
+                logger.warning(f"{msg} Truthfully falling back to CPU mode.")
+                return "cpu"
+            else:
+                raise DeviceConfigurationError(f"{msg} Auto-fallback is disabled.")
+
         logger.info("Configured for CPU execution.")
         return "cpu"
 
@@ -120,15 +171,26 @@ class RuntimeDiagnostics:
 
         cuda_avail, _, gpu_name, kernels_functional, _ = cls.get_cuda_status()
 
-        # Guarantee truthfulness constraint: Never report cuda:0 unless actually available and functional
-        if active_device == "cuda:0" and not (cuda_avail and kernels_functional):
-            raise DeviceConfigurationError("Falsified device detected: active_device='cuda:0' but GPU is not functional.")
+        # Guarantee truthfulness constraint: Never report cuda unless actually available and functional
+        if active_device.startswith("cuda") and not (cuda_avail and kernels_functional):
+            raise DeviceConfigurationError(f"Falsified device detected: active_device='{active_device}' but GPU is not functional.")
+
+        active_gpu_name = None
+        if active_device.startswith("cuda") and cuda_avail:
+            try:
+                import torch
+                idx = int(active_device.split(":")[1]) if ":" in active_device else 0
+                active_gpu_name = torch.cuda.get_device_name(idx)
+            except Exception:
+                active_gpu_name = gpu_name
+        elif active_device == "mps":
+            active_gpu_name = "Apple Silicon GPU (MPS)"
 
         return RuntimeInfo(
             python_version=sys.version.split()[0],
             torch_version=torch_ver,
             cuda_available=cuda_avail,
-            gpu_name=gpu_name if (cuda_avail and active_device == "cuda:0") else None,
+            gpu_name=active_gpu_name,
             active_device=active_device,
             backend="Ultralytics YOLO",
             weights_path=weights_path,

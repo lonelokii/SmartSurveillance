@@ -42,8 +42,7 @@ def main():
     parser.add_argument(
         "--device",
         type=str,
-        choices=["cuda:0", "cpu"],
-        help="Override inference device ('cuda:0' or 'cpu')",
+        help="Override inference device (e.g. 'cuda:0', 'cuda', 'cpu', 'mps')",
     )
     parser.add_argument(
         "--headless",

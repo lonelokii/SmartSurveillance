@@ -49,6 +49,12 @@ def generate_empty_room_video(output_path: str, num_frames: int = 100):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, 20.0, (640, 480))
+    if not out.isOpened():
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        out = cv2.VideoWriter(output_path, fourcc, 20.0, (640, 480))
+    if not out.isOpened():
+        fourcc = cv2.VideoWriter_fourcc(*"XVID")
+        out = cv2.VideoWriter(output_path, fourcc, 20.0, (640, 480))
     bg = draw_background()
 
     for _ in range(num_frames):
@@ -66,6 +72,12 @@ def generate_walking_person_video(output_path: str, num_frames: int = 120):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, 20.0, (640, 480))
+    if not out.isOpened():
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        out = cv2.VideoWriter(output_path, fourcc, 20.0, (640, 480))
+    if not out.isOpened():
+        fourcc = cv2.VideoWriter_fourcc(*"XVID")
+        out = cv2.VideoWriter(output_path, fourcc, 20.0, (640, 480))
 
     # Path from (150, 150) across y=240 and into zone (350, 150)-(550, 400)
     start_x, start_y = 150, 140

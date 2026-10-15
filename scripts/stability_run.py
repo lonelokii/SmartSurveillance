@@ -2,7 +2,14 @@
 
 import argparse
 import os
-import resource
+try:
+    import psutil
+except ImportError:
+    psutil = None
+try:
+    import resource
+except ImportError:
+    resource = None
 import sys
 import time
 import numpy as np
@@ -33,8 +40,14 @@ def main():
 
         elapsed = time.time() - start_time
         if frames_processed % 200 == 0:
-            usage = resource.getrusage(resource.RUSAGE_SELF)
-            print(f"[{elapsed:.1f}s / {args.duration}s] Processed {frames_processed} frames. RSS Memory: {usage.ru_maxrss} KB")
+            if psutil is not None:
+                rss_kb = psutil.Process().memory_info().rss // 1024
+                print(f"[{elapsed:.1f}s / {args.duration}s] Processed {frames_processed} frames. RSS Memory: {rss_kb} KB")
+            elif resource is not None:
+                usage = resource.getrusage(resource.RUSAGE_SELF)
+                print(f"[{elapsed:.1f}s / {args.duration}s] Processed {frames_processed} frames. RSS Memory: {usage.ru_maxrss} KB")
+            else:
+                print(f"[{elapsed:.1f}s / {args.duration}s] Processed {frames_processed} frames.")
 
     total_time = time.time() - start_time
     avg_fps = frames_processed / total_time

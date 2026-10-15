@@ -24,8 +24,22 @@ class SnapshotWriter:
         filename = f"alert_{event_id[:8]}_{safe_time}.jpg"
         filepath = os.path.join(self.output_dir, filename)
 
-        success = cv2.imwrite(filepath, frame)
-        if not success:
+        # Use imencode + standard file write to guarantee safety on paths with non-ASCII or Unicode characters
+        written = False
+        try:
+            success, enc_img = cv2.imencode(".jpg", frame)
+            if success:
+                with open(filepath, "wb") as f:
+                    f.write(enc_img)
+                written = True
+        except Exception:
+            written = False
+
+        if not written:
+            # Fallback to standard cv2.imwrite if imencode encountered an issue
+            written = cv2.imwrite(filepath, frame)
+
+        if not written or not os.path.exists(filepath):
             raise IOError(f"Failed to write snapshot image to {filepath}")
 
         return filepath
@@ -39,7 +53,7 @@ class DatabaseLogger:
         parent_dir = os.path.dirname(self.db_path)
         if parent_dir:
             os.makedirs(parent_dir, exist_ok=True)
-        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=30.0)
         self._init_schema()
 
     def _init_schema(self):

@@ -1,6 +1,7 @@
 # Smart Surveillance System
 
-[![Python 3.14](https://img.shields.io/badge/Python-3.14-blue.svg)](https://www.python.org/)
+[![Python 3.11-3.14](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.14-blue.svg)](https://www.python.org/)
+[![OS: Windows 11 & Linux](https://img.shields.io/badge/OS-Windows%2011%20%7C%20Linux-0078D4.svg)](https://microsoft.com/windows)
 [![Ultralytics YOLO](https://img.shields.io/badge/YOLO-Ultralytics%20v8.4+-orange.svg)](https://github.com/ultralytics/ultralytics)
 [![PyTorch](https://img.shields.io/badge/PyTorch-CUDA%20%7C%20CPU-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
@@ -20,12 +21,19 @@ Built with **Ultralytics YOLO**, **OpenCV**, and **PyTorch**, the system process
 - [4. Software, Libraries & Dependencies](#4-software-libraries--dependencies)
 - [5. Hardware & Environment Requirements](#5-hardware--environment-requirements)
 - [6. Installation & Setup Guide](#6-installation--setup-guide)
+  - [6.1 Windows 11 Native Setup Guide (PowerShell / Command Prompt)](#61-windows-11-native-setup-guide-powershell--command-prompt)
+  - [6.2 Linux & WSL2 Setup Guide](#62-linux--wsl2-setup-guide)
 - [7. Configuration Guide (`config.yaml`)](#7-configuration-guide-configyaml)
 - [8. Execution Steps & Working Examples](#8-execution-steps--working-examples)
 - [9. Utility & Diagnostic Scripts](#9-utility--diagnostic-scripts)
 - [10. Testing & Verification Suite](#10-testing--verification-suite)
+  - [10.1 Running the Automated Test Suite](#101-running-the-automated-test-suite)
+  - [10.2 Windows 11 Verification Workflow (Step-by-Step)](#102-windows-11-verification-workflow-step-by-step)
+  - [10.3 Empty-Room Zero False Positive Verification](#103-empty-room-zero-false-positive-verification)
 - [11. Project Roadmap](#11-project-roadmap)
 - [12. Troubleshooting & FAQ](#12-troubleshooting--faq)
+  - [Windows 11 Troubleshooting & Gotchas](#windows-11-troubleshooting--gotchas)
+  - [General Issues & FAQ](#general-issues--faq)
 - [13. License & Governance](#13-license--governance)
 
 ---
@@ -182,65 +190,186 @@ The project is built on modern Python 3.14 with standard scientific and computer
 ## 5. Hardware & Environment Requirements
 
 ### Minimum Requirements
-- **Operating System**: Linux (Ubuntu 22.04+ / Debian 12+) or Windows 11 with WSL2 (Ubuntu).
-- **CPU**: x86_64 or ARM64 processor (Intel Core i5 / AMD Ryzen 5 or higher).
+- **Operating System**:
+  - **Windows**: Windows 11 / 10 (64-bit) native execution via PowerShell 5.1/7+ or Command Prompt (`cmd.exe`), or WSL2 (Ubuntu 22.04+).
+  - **Linux**: Ubuntu 22.04 LTS / 24.04 LTS, Debian 12+, Fedora 39+, Arch Linux, or Docker container environments.
+  - **macOS**: macOS Monterey (12+), Ventura (13+), Sonoma (14+), Sequoia (15+) on Apple Silicon (M1/M2/M3/M4) or Intel.
+- **CPU**: x86_64 or ARM64 processor (Intel Core i5 / AMD Ryzen 5 / Apple Silicon or higher).
 - **RAM**: 4 GB minimum (8 GB recommended).
 - **Storage**: 1 GB free disk space (excluding video logs and snapshots).
-- **Camera (Optional for live mode)**: Any smartphone connected to the same local Wi-Fi running an RTSP/HTTP IP webcam app (e.g. *IP Webcam* on Android or *Live-Reporter* on iOS).
+- **Camera (Optional for live mode)**: Any smartphone connected to the same local Wi-Fi running an RTSP/HTTP IP webcam app (e.g. *IP Webcam* on Android or *Live-Reporter* on iOS), or any standard USB / built-in webcam.
 
-### GPU Acceleration (Optional)
-- **Supported GPUs**: NVIDIA GeForce RTX series (RTX 30-series, 40-series, 50-series) or NVIDIA workstation GPUs.
-- **CUDA Runtime**: CUDA 12.x or 13.x driver installed on host system.
-- *Note on RTX 50-series (Blackwell / Compute Capability 12.0 / `sm_120`)*: If running on brand-new architectures where PyTorch precompiled CUDA wheels lack native `sm_120` kernels, the system's `RuntimeDiagnostics` automatically falls back to verified CPU execution (achieving **>20 FPS** on CPU) with a clear diagnostic log.
+### Windows Prerequisites
+1. **Python**: Python 3.11, 3.12, or 3.14 (x64) from [python.org](https://www.python.org/downloads/windows/). Ensure **"Add python.exe to PATH"** is checked during installation.
+2. **Microsoft Visual C++ Redistributable**: Required for PyTorch and OpenCV native C++ extensions. Download and install [Visual C++ 2015–2022 Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe) or run `winget install Microsoft.VCRedist.2015+.x64`.
+3. **Git for Windows**: Download from [git-scm.com](https://git-scm.com/download/win) or run `winget install Git.Git`.
+4. **PowerShell Script Execution**: Allow execution of local virtual environment scripts (`RemoteSigned`).
+
+### Hardware Acceleration Options
+- **NVIDIA CUDA**: Supported on Windows and Linux with NVIDIA GeForce RTX series (RTX 30-series, 40-series, 50-series) or NVIDIA Quadro / RTX workstation GPUs with CUDA 12.x / 13.x drivers.
+- **Apple Silicon MPS**: Supported on macOS with M1/M2/M3/M4 chips via PyTorch Metal Performance Shaders (`--device mps`).
+- **Verified CPU Fallback**: Universally supported across all x86_64 and ARM64 platforms (achieving **>20 FPS** on CPU) without false claims or crashes.
+- *Note on RTX 50-series (Blackwell / Compute Capability 12.0 / `sm_120`)*: If running on brand-new architectures where PyTorch precompiled CUDA wheels lack native `sm_120` kernels, the system's `RuntimeDiagnostics` automatically falls back to verified CPU execution with a clear diagnostic log.
 
 ---
 
 ## 6. Installation & Setup Guide
 
-### Step 1: Clone Repository
+### 6.1 Windows 11 Native Setup Guide (PowerShell / Command Prompt)
+
+Follow these steps to set up and run the system natively on Windows 11 without WSL.
+
+#### Step 0: Install Prerequisites (One-Time Setup)
+Open **PowerShell as Administrator** (or standard Windows Terminal) and install the foundational tools via Windows Package Manager (`winget`):
+
+```powershell
+# 1. Install Python 3.12 (if not already installed)
+winget install Python.Python.3.12
+
+# 2. Install Git
+winget install Git.Git
+
+# 3. Install Microsoft Visual C++ 2015-2022 Redistributable (crucial for OpenCV & PyTorch)
+winget install Microsoft.VCRedist.2015+.x64
+```
+> [!NOTE]
+> If you installed Python manually from python.org, verify that `python --version` returns Python 3.11+ and that `python.exe` is added to your user `PATH`.
+
+#### Step 1: Enable PowerShell Script Execution
+By default, Windows 11 blocks running scripts in PowerShell. Run this command once in PowerShell:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+#### Step 2: Clone the Repository
+Open PowerShell or Command Prompt, navigate to your desired workspace directory, and clone the repository:
+
+```powershell
+git clone https://github.com/lonelokii/SmartSurveillance.git
+cd SmartSurveillance
+```
+
+#### Step 3: Create and Activate Virtual Environment
+Create an isolated Python virtual environment:
+
+- **In PowerShell**:
+  ```powershell
+  python -m venv .venv
+  .\.venv\Scripts\Activate.ps1
+  ```
+  *(Your prompt will change to show `(.venv)` at the beginning).*
+
+- **In Command Prompt (cmd.exe)**:
+  ```cmd
+  python -m venv .venv
+  .venv\Scripts\activate.bat
+  ```
+
+> [!TIP]
+> In Windows, use `python` (or `py -m venv .venv`). Avoid using `python3` on Windows, as it may redirect to the Microsoft Store.
+
+#### Step 4: Upgrade Package Installer
+Inside the activated virtual environment:
+
+```powershell
+python -m pip install --upgrade pip
+```
+
+#### Step 5: Install Dependencies
+
+Select your target hardware configuration:
+
+##### Option A: NVIDIA GPU Acceleration (CUDA 12.6 Official Wheels)
+If your Windows 11 PC has an NVIDIA GPU with updated drivers:
+
+```powershell
+# Install PyTorch with CUDA 12.6 acceleration
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+
+# Install Phase 1 surveillance dependencies
+pip install ultralytics opencv-python pyyaml numpy pytest
+```
+*Alternatively, you can install everything in one command using the Windows requirements file:*
+```powershell
+pip install -r requirements-windows.txt
+```
+
+##### Option B: CPU-Only Execution (No NVIDIA GPU)
+If running on Intel / AMD integrated graphics or non-NVIDIA hardware:
+
+```powershell
+# Install PyTorch CPU-optimized wheels
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# Install Phase 1 surveillance dependencies
+pip install ultralytics opencv-python pyyaml numpy pytest
+```
+
+#### Step 6: Verify Environment Diagnostics
+Run the diagnostic script to verify your Windows 11 Python environment, virtualenv isolation, PyTorch installation, and GPU detection:
+
+```powershell
+python scripts\check_env.py
+```
+
+Expected diagnostic output highlights:
+```text
+=== ENVIRONMENT DIAGNOSTIC REPORT ===
+Inside Virtual Environment: True (prefix: ...\SmartSurveillance\.venv)
+[torch] Installed: version 2.x.x+cu126 (or +cpu)
+  torch.cuda.is_available(): True (or False if CPU mode)
+  torch.cuda.get_device_name(0): NVIDIA GeForce RTX ...
+[ultralytics] Installed: version 8.4.x
+[cv2] Installed: version 4.10.x
+=== END OF REPORT ===
+```
+
+#### Step 7: Verify YOLO Weights
+Pretrained model weights (`yolov8n.pt`) are included in the workspace and will also be automatically verified and downloaded by Ultralytics on first execution.
+
+---
+
+### 6.2 Linux & WSL2 Setup Guide
+
+For Ubuntu 22.04 LTS / 24.04 LTS or Windows Subsystem for Linux (WSL2):
+
+#### Step 1: Clone Repository
 ```bash
 git clone https://github.com/lonelokii/SmartSurveillance.git
 cd SmartSurveillance
 ```
 
-### Step 2: Create and Activate Virtual Environment
+#### Step 2: Create and Activate Virtual Environment
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### Step 3: Upgrade Package Installer
+#### Step 3: Upgrade Package Installer
 ```bash
 pip install --upgrade pip
 ```
 
-### Step 4: Install Dependencies
+#### Step 4: Install Dependencies
 
-#### Standard Installation (Automatic GPU / CPU selection via PyTorch)
 ```bash
+# GPU / Standard Installation:
 pip install -r requirements.txt
-```
 
-#### Manual PyTorch Selection (CUDA 12.6 Official Wheels)
-```bash
+# Or manual CUDA 12.6 wheels:
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 pip install ultralytics opencv-python pyyaml numpy pytest
-```
 
-#### CPU-Only Systems
-```bash
+# Or CPU-Only:
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 pip install ultralytics opencv-python pyyaml numpy pytest
 ```
 
-### Step 5: Verify Environment & Hardware Diagnostics
-Run the automated environment check to inspect Python, PyTorch, CUDA device visibility, and installed libraries:
+#### Step 5: Verify Environment
 ```bash
 python3 scripts/check_env.py
 ```
-
-### Step 6: Verify YOLO Weights
-The default weights `yolov8n.pt` are automatically downloaded by Ultralytics on first run if not already present in the workspace.
 
 ---
 
@@ -303,52 +432,86 @@ storage:
 ## 8. Execution Steps & Working Examples
 
 ### Example 1: Run with Default Configuration
-```bash
-python3 main.py
-```
+- **Windows (PowerShell / CMD)**:
+  ```powershell
+  python main.py
+  ```
+- **Linux / WSL2**:
+  ```bash
+  python3 main.py
+  ```
 
 ### Example 2: Run with a Local Video File
-Test with any local recorded video clip:
-```bash
-python3 main.py --source video --video-path tests/data/one_person_walk.mp4
-```
+Test surveillance tracking and spatial analytics on a local recorded video clip:
+- **Windows (PowerShell / CMD)**:
+  ```powershell
+  python main.py --source video --video-path tests\data\one_person_walk.mp4
+  ```
+- **Linux / WSL2**:
+  ```bash
+  python3 main.py --source video --video-path tests/data/one_person_walk.mp4
+  ```
 
 ### Example 3: Run with a Live Phone Camera (IP Webcam)
-1. Install **IP Webcam** (Android) or any RTSP stream app on your phone.
-2. Start the server inside the app and note the streaming URL (e.g., `http://192.168.1.45:8080/video`).
-3. Ensure your PC and phone are on the same Wi-Fi network.
+1. Install **IP Webcam** (Android) or any RTSP/HTTP stream app on your smartphone.
+2. Start the server inside the app and note the streaming URL (e.g. `http://192.168.1.45:8080/video`).
+3. Ensure your PC and phone are connected to the same local Wi-Fi network.
 4. Execute:
-```bash
-python3 main.py --source live --live-url http://192.168.1.45:8080/video
-```
+- **Windows (PowerShell / CMD)**:
+  ```powershell
+  python main.py --source live --live-url http://192.168.1.45:8080/video
+  ```
+- **Linux / WSL2**:
+  ```bash
+  python3 main.py --source live --live-url http://192.168.1.45:8080/video
+  ```
 
 ### Example 4: Force CPU Inference
-```bash
+Truthfully enforce CPU inference (bypassing GPU):
+```powershell
+# Windows
+python main.py --device cpu
+
+# Linux / WSL2
 python3 main.py --device cpu
 ```
 
 ### Example 5: Run Headless (Automated Server / Benchmarks)
 Run without opening an OpenCV GUI window:
-```bash
+```powershell
+# Windows
+python main.py --headless --max-frames 300
+
+# Linux / WSL2
 python3 main.py --headless --max-frames 300
 ```
 
+### Example 6: Run with an Attached USB Webcam or Laptop Camera
+You can stream directly from a local USB camera or built-in webcam by passing its numeric camera index:
+```powershell
+# Windows (PowerShell / CMD)
+python main.py --source video --video-path 0
+
+# Linux / macOS
+python3 main.py --source video --video-path 0
+```
+
 ### Operator Controls
-- **Quit / Stop Application**: Press `q` while focused on the OpenCV video display window, or send `Ctrl+C` (SIGINT/SIGTERM) in the terminal. All capture devices and database connections are closed cleanly.
+- **Quit / Stop Application**: Press `q` while focused on the OpenCV video display window, or press `Ctrl+C` in the terminal. All capture devices and database connections are closed cleanly.
 
 ---
 
 ## 9. Utility & Diagnostic Scripts
 
-The `scripts/` folder provides standalone validation tools:
+The `scripts/` folder provides standalone validation tools executable across both Windows 11 and Linux:
 
-| Script Name | Command | Purpose |
-|---|---|---|
-| **Environment Check** | `python3 scripts/check_env.py` | Generates a full report of Python version, CUDA drivers, WSL GPU passthrough, and package paths. |
-| **FPS Benchmark** | `python3 scripts/benchmark_fps.py --frames 100` | Measures actual processing throughput against the PRD requirement (`>= 5.0 FPS`). |
-| **CUDA Verification** | `python3 scripts/verify_cuda_inference.py` | Performs standalone YOLO inference directly on CUDA device 0 and verifies tensor output device. |
-| **Stability Runner** | `python3 scripts/stability_run.py --duration 600` | Runs continuous 10-minute synthetic processing and monitors RSS memory consumption. |
-| **Synthetic Media Creator** | `python3 scripts/create_test_media.py` | Generates deterministic synthetic test videos (`empty_room_test.mp4` and `one_person_walk.mp4`) for testing. |
+| Script Name | Windows 11 Command | Linux / WSL2 Command | Purpose |
+|---|---|---|---|
+| **Environment Check** | `python scripts\check_env.py` | `python3 scripts/check_env.py` | Generates a full report of Python version, CUDA drivers, GPU detection, and package paths. |
+| **FPS Benchmark** | `python scripts\benchmark_fps.py --frames 100` | `python3 scripts/benchmark_fps.py --frames 100` | Measures actual processing throughput against the PRD requirement (`>= 5.0 FPS`). |
+| **CUDA Verification** | `python scripts\verify_cuda_inference.py` | `python3 scripts/verify_cuda_inference.py` | Performs standalone YOLO inference directly on CUDA device 0 and verifies tensor output device. |
+| **Stability Runner** | `python scripts\stability_run.py --duration 600` | `python3 scripts/stability_run.py --duration 600` | Runs continuous 10-minute synthetic processing and monitors runtime stability. |
+| **Synthetic Media Creator** | `python scripts\create_test_media.py` | `python3 scripts/create_test_media.py` | Generates deterministic synthetic test videos (`empty_room_test.mp4` and `one_person_walk.mp4`) for testing. |
 
 ---
 
@@ -356,14 +519,18 @@ The `scripts/` folder provides standalone validation tools:
 
 The repository includes a comprehensive automated test suite covering all functional requirements (FR-01 through FR-28) and acceptance criteria (AC-1 through AC-18).
 
-### Running All Tests
-```bash
+### 10.1 Running the Automated Test Suite
+
+Run the full pytest suite from PowerShell, Command Prompt, or bash inside your activated virtual environment:
+
+```powershell
+# Windows 11 (PowerShell / CMD) & Linux
 pytest -v
 ```
 
-### Test Coverage Summary
+#### Test Coverage Summary
 
-```
+```text
 tests/test_e2e_pipeline.py ........ [End-to-end full pipeline & clean shutdown]
 tests/test_line_crossing.py ....... [Directional line crossing & anti-duplicate logic]
 tests/test_media_pipeline.py ...... [Test clip evaluation & zero false detection check]
@@ -376,7 +543,85 @@ tests/test_zone_monitor.py ........ [Restricted-zone outside-to-inside transitio
 ======================= 19 passed in 16.5s =======================
 ```
 
-### Empty-Room Zero False Positive Verification
+---
+
+### 10.2 Windows 11 Verification Workflow (Step-by-Step)
+
+To guarantee that your Windows 11 environment is 100% operational, execute this step-by-step verification checklist in PowerShell:
+
+#### Verification 1: Inspect Environment & Dependencies
+Verify Python 3.11+, virtualenv activation, PyTorch CUDA/CPU detection, and library imports:
+```powershell
+python scripts\check_env.py
+```
+- **Expected Result**: Confirms `Inside Virtual Environment: True`, lists package versions (`torch`, `ultralytics`, `cv2`, `numpy`, `yaml`), and reports CUDA device name or truthful CPU status.
+
+#### Verification 2: Run Full Regression Test Suite
+Ensure all 19 unit and integration tests pass cleanly on Windows:
+```powershell
+pytest -v
+```
+- **Expected Result**: `19 passed` with 0 failures and 0 errors.
+
+#### Verification 3: Verify Hardware Truthfulness & YOLO CUDA Inference
+Validate that the YOLOv8 model compiles and executes inferences on the designated device without errors or silent detector fallbacks:
+```powershell
+python scripts\verify_cuda_inference.py
+```
+- **Expected Result**: Outputs tensor predictions on the truthful active device (`cuda:0` or verified `cpu`).
+
+#### Verification 4: Benchmark Processing Throughput (FPS)
+Verify the PRD performance requirement (`>= 5.0 FPS`):
+```powershell
+python scripts\benchmark_fps.py --frames 100
+```
+- **Expected Result**:
+  ```text
+  === BENCHMARK SUMMARY ===
+  CPU Performance: ~24.0 FPS (Target: >= 5.0 FPS) - PASS
+  ```
+
+#### Verification 5: Headless Pipeline Smoke Test
+Test end-to-end video acquisition, YOLO person detection, centroid tracking, line-crossing counting, and restricted-zone monitoring without GUI overhead:
+```powershell
+python main.py --source video --video-path tests\data\one_person_walk.mp4 --headless --max-frames 60
+```
+- **Expected Result**: Logs frame progress, records crossing and zone breach events, and terminates cleanly with exit code 0.
+
+#### Verification 6: Interactive Heads-Up Display (HUD) Verification
+Launch the live visual GUI window to inspect real-time video rendering:
+```powershell
+python main.py --source video --video-path tests\data\one_person_walk.mp4
+```
+- **Expected Result**: Opens an OpenCV window displaying:
+  - Confirmed person bounding boxes with track IDs and confidence scores.
+  - Directional virtual entry/exit line.
+  - Semi-transparent restricted-zone polygon.
+  - HUD header showing FPS, active device, and occupancy count.
+  - Red flashing breach banner when the person steps into the zone.
+  - Press `q` to quit cleanly.
+
+#### Verification 7: Verify Event Snapshots & SQLite Database
+Confirm that alert snapshots and structured metadata are properly persisted to disk:
+
+- **Check Snapshots Directory**:
+  - In PowerShell:
+    ```powershell
+    Get-ChildItem -Path snapshots\ -Filter *.jpg
+    ```
+  - In Command Prompt:
+    ```cmd
+    dir snapshots\*.jpg
+    ```
+- **Query Recorded SQLite Alerts via Python (No external SQLite CLI needed)**:
+  ```powershell
+  python -c "import sqlite3; con = sqlite3.connect('surveillance.db'); print(con.execute('SELECT event_id, timestamp, track_id, zone_id, snapshot_path FROM alerts').fetchall())"
+  ```
+  - **Expected Result**: Prints logged records containing UUIDs, UTC timestamps, `ZONE_A`, and paths like `snapshots\alert_...jpg`.
+
+---
+
+### 10.3 Empty-Room Zero False Positive Verification
 Automated diagnostics evaluated on `empty_room_test.mp4` (100 frames) confirmed 0 false positive detections:
 ```json
 {
@@ -428,12 +673,55 @@ Automated diagnostics evaluated on `empty_room_test.mp4` (100 frames) confirmed 
 
 ## 12. Troubleshooting & FAQ
 
-### 1. The phone IP camera stream fails to open
+### Windows 11 Troubleshooting & Gotchas
+
+#### 1. PowerShell Error: `File ... Activate.ps1 cannot be loaded because running scripts is disabled`
+- **Cause**: Windows 11 has a default security policy that blocks running PowerShell scripts (`Restricted`).
+- **Solution**: Open PowerShell and run:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
+  Then re-run `.\.venv\Scripts\Activate.ps1`.
+
+#### 2. PyTorch or OpenCV Error: `ImportError: DLL load failed while importing _custom_ops` or `cv2: DLL load failed`
+- **Cause**: The system is missing the Microsoft Visual C++ runtime libraries required by native compiled binaries.
+- **Solution**: Install the Microsoft Visual C++ Redistributable via `winget`:
+  ```powershell
+  winget install Microsoft.VCRedist.2015+.x64
+  ```
+  Or download and run [vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe) from Microsoft.
+
+#### 3. Command `python3` Opens the Microsoft Windows Store
+- **Cause**: Windows 11 includes a default app alias for `python.exe` and `python3.exe` that opens the Microsoft Store when Python is not mapped in PATH.
+- **Solution**:
+  - Use `python` instead of `python3`.
+  - Alternatively, go to **Windows Settings > Apps > Advanced app settings > App execution aliases**, and toggle OFF "App Installer (python.exe)" and "App Installer (python3.exe)".
+
+#### 4. Windows Defender Firewall Prompts for Live Phone Camera Streams
+- **Cause**: When connecting to an RTSP or HTTP IP webcam stream on the local network, Windows Firewall may request permission for Python network sockets.
+- **Solution**: Select **"Private networks"** and click **"Allow access"**. Ensure both your phone and PC are connected to the same Wi-Fi subnet (e.g. `192.168.1.x`).
+
+#### 5. Command `sqlite3` Is Not Recognized in PowerShell / CMD
+- **Cause**: Unlike Linux/macOS, Windows does not include a command-line `sqlite3.exe` utility by default.
+- **Solution**: You can inspect `surveillance.db` directly using Python without installing third-party tools:
+  ```powershell
+  python -c "import sqlite3; con = sqlite3.connect('surveillance.db'); print(con.execute('SELECT event_id, timestamp, track_id, zone_id, snapshot_path FROM alerts').fetchall())"
+  ```
+  Or install the official SQLite CLI via winget:
+  ```powershell
+  winget install SQLite.SQLite
+  ```
+
+---
+
+### General Issues & FAQ
+
+#### 1. The Phone IP Camera Stream Fails to Open
 - Ensure your mobile phone and PC are connected to the exact same local Wi-Fi network (not mobile data).
 - Test opening the stream URL in a browser on your PC (e.g. `http://192.168.1.5:8080/video`).
 - Ensure no firewall on Linux/Windows is blocking incoming HTTP port 8080.
 
-### 2. PyTorch displays a warning regarding CUDA Compute Capability (sm_120 / RTX 5050)
+#### 2. PyTorch Warning Regarding CUDA Compute Capability (sm_120 / RTX 5050)
 - NVIDIA GeForce RTX 50-series GPUs (Blackwell) use compute capability 12.0 (`sm_120`).
 - If your installed PyTorch wheel is built for CUDA 12.6, prebuilt `sm_120` kernels may not be included.
 - **The system automatically handles this**: `RuntimeDiagnostics` detects the missing kernels, logs a clear warning, and truthfully falls back to CPU mode, where inference runs smoothly at **~24 FPS**.
@@ -442,13 +730,7 @@ Automated diagnostics evaluated on `empty_room_test.mp4` (100 frames) confirmed 
   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
   ```
 
-### 3. How do I inspect stored alert events in SQLite?
-You can query the database directly using the SQLite CLI or Python:
-```bash
-sqlite3 surveillance.db "SELECT event_id, timestamp, track_id, zone_id, snapshot_path FROM alerts;"
-```
-
-### 4. Can I use this for non-human objects (cars, backpacks, etc.)?
+#### 3. Can I Use This for Non-Human Objects (Cars, Backpacks, etc.)?
 No. Phase 1 is strictly scoped to the `person` class (COCO 0) to ensure high reliability, zero clutter, and compliance with the core surveillance baseline.
 
 ---

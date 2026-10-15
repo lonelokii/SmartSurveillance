@@ -47,10 +47,21 @@ def main():
     if cuda_avail and functional:
         gpu_fps = benchmark("cuda:0", num_frames=args.frames)
 
+    # Benchmark Apple Silicon MPS if available
+    mps_fps = None
+    try:
+        import torch
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            mps_fps = benchmark("mps", num_frames=args.frames)
+    except Exception:
+        pass
+
     print("\n=== BENCHMARK SUMMARY ===")
     print(f"CPU Performance: {cpu_fps:.2f} FPS (Target: >= 5.0 FPS) - {'PASS' if cpu_fps >= 5.0 else 'FAIL'}")
     if gpu_fps is not None:
         print(f"GPU ({gpu_name}) Performance: {gpu_fps:.2f} FPS (Target: >= 5.0 FPS) - {'PASS' if gpu_fps >= 5.0 else 'FAIL'}")
+    if mps_fps is not None:
+        print(f"Apple Silicon (MPS) Performance: {mps_fps:.2f} FPS (Target: >= 5.0 FPS) - {'PASS' if mps_fps >= 5.0 else 'FAIL'}")
 
 
 if __name__ == "__main__":

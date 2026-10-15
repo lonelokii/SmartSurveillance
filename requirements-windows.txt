@@ -1,0 +1,12 @@
+# Windows 11 Requirements for Smart Surveillance System
+# For CUDA 12.6 GPU acceleration:
+--extra-index-url https://download.pytorch.org/whl/cu126
+torch
+torchvision
+
+# Phase 1 Core Dependencies
+ultralytics>=8.4.0
+opencv-python>=4.10.0
+pyyaml>=6.0
+numpy>=2.0.0
+pytest>=8.0.0
